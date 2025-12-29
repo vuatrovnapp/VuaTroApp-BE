@@ -23,18 +23,18 @@ jobs:
           cache: maven
 
       - name: Build and run unit tests
-        run: mvn clean install --batch-mode -DskipITs=false
+        run: mvn clean install --batch-mode -Dspring.profiles.active=test -DskipITs=false
 
       # 4. Conditional integration tests for main branch
-      - name: Run integration tests on main
+      - name: Run integration tests on main with 'test' profile
         if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
         run: |
           echo "Starting Spring Boot server..."
-          mvn spring-boot:run &
+          mvn spring-boot:run -Dspring.profiles.active=test &  # Ensure 'test' profile is active for integration tests
           SERVER_PID=$!
           echo "Waiting for server to start..."
           sleep 15
-          echo "Running integration tests..."
-          mvn verify -DskipUnitTests=true
+          echo "Running integration tests with 'test' profile..."
+          mvn verify -Dspring.profiles.active=test -DskipUnitTests=true
           echo "Stopping server..."
           kill $SERVER_PID
