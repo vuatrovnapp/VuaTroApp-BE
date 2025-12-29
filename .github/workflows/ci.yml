@@ -1,0 +1,40 @@
+name: VuaTroVN BE CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Build and run unit tests
+        run: mvn clean install --batch-mode -DskipITs=false
+
+      # 4. Conditional integration tests for main branch
+      - name: Run integration tests on main
+        if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
+        run: |
+          echo "Starting Spring Boot server..."
+          mvn spring-boot:run &
+          SERVER_PID=$!
+          echo "Waiting for server to start..."
+          sleep 15
+          echo "Running integration tests..."
+          mvn verify -DskipUnitTests=true
+          echo "Stopping server..."
+          kill $SERVER_PID
